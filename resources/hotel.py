@@ -1,8 +1,13 @@
-from flask_restful import Resource
+import uuid
+
+from flask_restful import Resource, reqparse
+from models.hotel import HotelModel
+
+
 
 hoteis = [
   {
-    'id' : '123456a',
+    'id' : f'1f60a438-6a91-4db2-925a-49429ae9ae3f',
     'nome' : 'Alpha Hotel',
     'estrelas' : 4.3,
     'diaria' : 420.34,
@@ -38,20 +43,59 @@ class Hoteis(Resource):
     return {'hoteis' : hoteis}
 
 class Hotel(Resource) :
-  def get(self, id):
+  argumentos =  reqparse.RequestParser()
+  argumentos.add_argument('nome')
+  argumentos.add_argument('estrelas')
+  argumentos.add_argument('diaria')
+  argumentos.add_argument('cidade')
+
+  def find_hotel(self, id) :
     for hotel in hoteis:
       if hotel['id'] == id:
         return hotel
+    return None
+
+  def get(self, id):
+    hotel = self.find_hotel(id)    
+
+    if hotel:
+      return hotel
     
     return {'message' : 'Hotel not found'}, 404
+
+
   
   def post(self, id):
-    pass
+
+
+    #chaves e valores de todos os argumentos passados
+    dados = Hotel.argumentos.parse_args()
+
+    obj_hotel =HotelModel(id= f'{uuid.uuid4()}' , **dados)
+    novo_hotel = obj_hotel.json()
+
+    hoteis.append(novo_hotel)
+    return novo_hotel, 201
+
 
   def put(self, id):
-    pass
+    dados = Hotel.argumentos.parse_args()
+    
+    hotel = self.find_hotel(id)
+    if not hotel:
+      return {'message': 'Hotel not found'}
+
+    hotel_update = HotelModel(id  , **dados)
+    hotel_update = hotel_update.json()
+    hotel.update(hotel_update)
+
+    return hotel_update, 200
 
   def delete(self, id):
-    pass
+    global hoteis
+
+    hoteis = [hotel for hotel in hoteis if hotel['id'] != id ]
+
+    return {'message': 'Hotel deleted'}
 
 
